@@ -1,0 +1,22 @@
+{
+    "name": "mermaid-chart-block",
+    "version": "1.0.0",
+    "description": "A production-ready Gutenberg block using PNPM, Webpack, and mmc for local diagram rendering.",
+    "license": "GPL-2.0-or-later",
+    "scripts": {
+        "build": "wp-scripts build",
+        "start": "wp-scripts start",
+        "format": "wp-scripts format",
+        "lint:js": "wp-scripts lint-js",
+        "lint:style": "wp-scripts lint-style",
+        "deploy:local": "wp-scripts build && rsync -av --exclude='node_modules' --exclude='.git' ./ '/Users/jameslepage/Local Sites/mermaid-block/app/public/wp-content/plugins/mermaid-chart-block/'"
+    },
+    "devDependencies": {
+        "@wordpress/scripts": "^26.0.0",
+        "sass": "^1.66.1"
+    },
+    "dependencies": {
+        "mermaid": "^11.4.1",
+        "mmc": "^1.0.0"
+    }
+}

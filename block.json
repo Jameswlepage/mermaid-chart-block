@@ -1,0 +1,60 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "mermaid-chart/block",
+    "version": "1.0.0",
+    "title": "Mermaid Chart Block",
+    "category": "widgets",
+    "icon": "chart-bar",
+    "description": "Displays diagrams with mmc (similar to mermaid).",
+    "keywords": [ "diagram", "chart", "mmc", "flowchart", "er" ],
+    "textdomain": "mermaid-chart-block",
+    "attributes": {
+      "diagramCode": {
+        "type": "string",
+        "default": "erDiagram\\n  CUSTOMER ||--o{ ORDER : places\\n  ORDER ||--|{ LINE-ITEM : contains\\n  CUSTOMER }|--|{ DELIVERY-ADDRESS : uses"
+      },
+      "content": {
+        "type": "string",
+        "default": ""
+      },
+      "theme": {
+        "type": "string",
+        "default": "default"
+      },
+      "fontSize": {
+        "type": "number",
+        "default": 16
+      },
+      "backgroundColor": {
+        "type": "string",
+        "default": "#ffffff"
+      },
+      "padding": {
+        "type": "number",
+        "default": 16
+      },
+      "borderStyle": {
+        "type": "string",
+        "default": "dashed"
+      },
+      "diagramDirection": {
+        "type": "string",
+        "default": "TB"
+      },
+      "isDraggable": {
+        "type": "boolean",
+        "default": false
+      }
+    },
+    "supports": {
+      "anchor": true,
+      "interactivity": true
+    },
+    "editorScript": "file:./build/editor.js",
+    "editorStyle": "file:./build/style.css",
+    "style": "file:./build/style.css",
+    "viewScript": "file:./build/view.js",
+    "render": "file:./render.php"
+  }
+  
