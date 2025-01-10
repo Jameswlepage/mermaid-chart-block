@@ -3,9 +3,10 @@ import mermaid from 'mermaid';
 document.addEventListener('DOMContentLoaded', () => {
 	// Initialize mermaid with default config
 	mermaid.initialize({
-		startOnLoad: false, // We'll manually render
+		startOnLoad: false,
 		theme: 'default',
-		securityLevel: 'loose', // Required for some diagram types
+		securityLevel: 'loose',
+		htmlLabels: true // Match editor config
 	});
 
 	// Find all mermaid chart containers
@@ -18,22 +19,37 @@ document.addEventListener('DOMContentLoaded', () => {
 			const fontSize = parseInt(div.dataset.fontsize, 10) || 16;
 			const direction = div.dataset.direction || 'TB';
 
-			// Update configuration for this specific chart
-			const config = {
+			// Reset mermaid configuration for this chart
+			mermaid.initialize({
+				startOnLoad: false,
 				theme: theme,
 				fontSize: fontSize,
 				flowchart: {
 					defaultRenderer: 'dagre-d3',
-					orientation: direction,
-				}
-			};
+					orientation: direction
+				},
+				securityLevel: 'loose',
+				htmlLabels: true
+			});
 
 			// Get the diagram code
 			const graphDefinition = div.textContent.trim();
 
+			// Create container like in editor
+			const container = document.createElement('div');
+			container.style.display = 'flex';
+			container.style.justifyContent = 'center';
+			container.style.width = '100%';
+			container.className = 'mermaid-target';
+			container.textContent = graphDefinition;
+
 			// Generate and insert SVG
-			const { svg } = await mermaid.render(`mermaid-${Math.random().toString(36).substr(2, 9)}`, graphDefinition, div);
-			div.innerHTML = svg;
+			const { svg } = await mermaid.render(`mermaid-${Math.random().toString(36).substr(2, 9)}`, graphDefinition);
+			container.innerHTML = svg;
+
+			div.innerHTML = '';
+			div.appendChild(container);
+			div.style.display = 'block';
 		} catch (error) {
 			console.error('Mermaid rendering error:', error);
 			div.innerHTML = `<p class="mermaid-error">Error rendering diagram: ${error.message}</p>`;
