@@ -12,7 +12,10 @@ import {
 	RangeControl,
 	ToggleControl,
 	TextareaControl,
-	TabPanel
+	TabPanel,
+	Button,
+	Tooltip,
+	CheckboxControl
 } from '@wordpress/components';
 import { useState, useEffect, useRef } from '@wordpress/element';
 import mermaid from 'mermaid';
@@ -39,10 +42,21 @@ const Edit = ({ attributes, setAttributes }) => {
 	const [code, setCode] = useState(content || '');
 	const [error, setError] = useState(null);
 	const [isRendering, setIsRendering] = useState(false);
+	const [aiMode, setAiMode] = useState(content ? 'edit' : 'generate');
+	const [aiPrompt, setAiPrompt] = useState('');
 
 	// For controlling the preview
 	const previewRef = useRef(null);
 	const [activeTab, setActiveTab] = useState('markup');
+
+	// Update aiMode when code changes
+	useEffect(() => {
+		if (code && aiMode === 'generate') {
+			setAiMode('edit');
+		} else if (!code && aiMode === 'edit') {
+			setAiMode('generate');
+		}
+	}, [code]);
 
 	// Helper function to display messages in the preview area
 	const displayMessage = (message, type = 'info') => {
@@ -126,9 +140,26 @@ const Edit = ({ attributes, setAttributes }) => {
 					setError(err.message);
 					setIsRendering(false);
 					displayMessage(
-						`Unable to render diagram: ${err.message}. Please check your syntax.`,
+						`Unable to render diagram: ${err.str || err.message}. Please check your syntax.`,
 						'error'
 					);
+
+					// Add error details to help debug specific issues
+					if (err.hash) {
+						const details = [];
+						if (err.hash.expected) {
+							details.push(`Expected: ${err.hash.expected.join(', ')}`);
+						}
+						if (err.hash.token) {
+							details.push(`Found: ${err.hash.token}`);
+						}
+						if (err.hash.line) {
+							details.push(`Line: ${err.hash.line}`);
+						}
+						if (details.length > 0) {
+							displayMessage(details.join('\n'), 'error');
+						}
+					}
 				});
 		} catch (err) {
 			console.error('Mermaid initialization error:', err);
@@ -193,6 +224,52 @@ const Edit = ({ attributes, setAttributes }) => {
 						checked={isDraggable}
 						onChange={(value) => setAttributes({ isDraggable: value })}
 					/>
+				</PanelBody>
+				<PanelBody title={__('AI Creator', 'mermaid-chart-block')} initialOpen={false}>
+					<TextareaControl
+						label={aiMode === 'generate' ?
+							__('Describe your diagram', 'mermaid-chart-block') :
+							__('How would you like to modify the diagram?', 'mermaid-chart-block')
+						}
+						value={aiPrompt}
+						onChange={(value) => setAiPrompt(value)}
+						rows={4}
+					/>
+					<div style={{
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						gap: '8px',
+						marginTop: '8px'
+					}}>
+						<Tooltip text={
+							!code ?
+								__('Edit mode is disabled when no diagram exists', 'mermaid-chart-block') :
+								__('Switch between generating new diagrams or editing existing ones', 'mermaid-chart-block')
+						}>
+							<div style={{ flex: '1' }}>
+								<CheckboxControl
+									label={__('Edit', 'mermaid-chart-block')}
+									checked={aiMode === 'edit'}
+									onChange={(value) => setAiMode(value ? 'edit' : 'generate')}
+									disabled={!code}
+								/>
+							</div>
+						</Tooltip>
+						<Button
+							variant="primary"
+							style={{ flex: '1', textAlign: 'center' }}
+							onClick={() => {
+								// TODO: Implement AI generation/editing logic
+								console.log('AI Prompt:', aiPrompt, 'Mode:', aiMode);
+							}}
+						>
+							{aiMode === 'generate' ?
+								code ? __('Generate (Overwrites)', 'mermaid-chart-block') : __('Generate', 'mermaid-chart-block') :
+								__('Edit', 'mermaid-chart-block')
+							}
+						</Button>
+					</div>
 				</PanelBody>
 			</InspectorControls>
 
