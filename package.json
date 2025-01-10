@@ -9,7 +9,7 @@
         "format": "wp-scripts format",
         "lint:js": "wp-scripts lint-js",
         "lint:style": "wp-scripts lint-style",
-        "deploy:local": "wp-scripts build && rsync -av --exclude='node_modules' --exclude='.git' ./ '/Users/jameslepage/Local Sites/mermaid-block/app/public/wp-content/plugins/mermaid-chart-block/'"
+        "deploy:local": "wp-scripts build && zip -r mermaid-chart-block.zip . -x '*.git*' -x 'node_modules/*'"
     },
     "devDependencies": {
         "@wordpress/scripts": "^26.0.0",

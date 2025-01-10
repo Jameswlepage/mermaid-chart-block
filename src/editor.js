@@ -15,9 +15,11 @@ import {
 	TabPanel,
 	Button,
 	Tooltip,
-	CheckboxControl
+	CheckboxControl,
+	Snackbar
 } from '@wordpress/components';
 import { useState, useEffect, useRef } from '@wordpress/element';
+import { useSelect } from '@wordpress/data';
 import mermaid from 'mermaid';
 import AIIcon from './icons/aiIcon';
 
@@ -45,10 +47,141 @@ const Edit = ({ attributes, setAttributes }) => {
 	const [isRendering, setIsRendering] = useState(false);
 	const [aiMode, setAiMode] = useState(content ? 'edit' : 'generate');
 	const [aiPrompt, setAiPrompt] = useState('');
+	const [isAiLoading, setIsAiLoading] = useState(false);
+	const [showSuccessNotice, setShowSuccessNotice] = useState(false);
+	const [aiError, setAiError] = useState(null);
+
+	// Get AI Services capabilities
+	const { hasAvailableServices, getAvailableService, aiCapabilities } = useSelect((select) => {
+		// Safety check for AI Services initialization
+		if (!window.aiServices?.ai) {
+			return {
+				hasAvailableServices: false,
+				getAvailableService: null,
+				aiCapabilities: null
+			};
+		}
+
+		const { enums, store: aiStore } = window.aiServices.ai;
+		const AI_CAPABILITIES = [enums.AiCapability.TEXT_GENERATION];
+
+		return {
+			hasAvailableServices: select(aiStore).hasAvailableServices(),
+			getAvailableService: select(aiStore).getAvailableService(AI_CAPABILITIES),
+			aiCapabilities: AI_CAPABILITIES
+		};
+	}, []);
 
 	// For controlling the preview
 	const previewRef = useRef(null);
 	const [activeTab, setActiveTab] = useState('markup');
+
+	// Handle AI generation/editing
+	const handleAiRequest = async () => {
+		if (!window.aiServices?.ai) {
+			setAiError(__('AI Services plugin is not properly initialized. Please check if it\'s activated.', 'mermaid-chart-block'));
+			return;
+		}
+
+		const { helpers } = window.aiServices.ai;
+
+		if (!hasAvailableServices || !getAvailableService) {
+			setAiError(__('No AI service available. Please configure an AI service in the WordPress settings.', 'mermaid-chart-block'));
+			return;
+		}
+
+		if (!aiPrompt.trim()) {
+			setAiError(__('Please enter a prompt', 'mermaid-chart-block'));
+			return;
+		}
+
+		setIsAiLoading(true);
+		setAiError(null);
+
+		try {
+			// Build a comprehensive system prompt
+			const systemPrompt = `You are a Mermaid diagram expert. Create a valid Mermaid diagram based on the request.
+Always wrap your response in a markdown code block like this:
+
+\`\`\`mermaid
+flowchart TD
+    A[Start] --> B{Is it?}
+    B -->|Yes| C[OK]
+    B -->|No| D[Not OK]
+\`\`\`
+
+NEVER add any explanations or text before or after the code block.
+STOP immediately after the closing \`\`\`.
+
+Here are two more examples of valid responses:
+
+\`\`\`mermaid
+sequenceDiagram
+    Alice->>John: Hello John, how are you?
+    John-->>Alice: Great!
+    Alice-)John: See you later!
+\`\`\`
+
+\`\`\`mermaid
+classDiagram
+    Animal <|-- Duck
+    Animal <|-- Fish
+    Animal: +int age
+    Animal: +String gender
+    Duck: +String beakColor
+    Fish: -int sizeInFeet
+\`\`\``;
+
+			// Build the user prompt based on mode
+			const userPrompt = aiMode === 'edit'
+				? `Current Diagram:\n\`\`\`mermaid\n${code}\n\`\`\`\n\nModify the diagram to: ${aiPrompt}`
+				: `Create a Mermaid diagram that: ${aiPrompt}`;
+
+			// Combine prompts for the AI
+			const fullPrompt = `${systemPrompt}\n\nUser Request: ${userPrompt}`;
+
+			const candidates = await getAvailableService.generateText(
+				fullPrompt,
+				{
+					feature: 'mermaid-chart-block',
+					temperature: 0.7,
+					maxTokens: 1000,
+				}
+			);
+
+			// Extract and clean the Mermaid code
+			let mermaidCode = helpers
+				.getTextFromContents(
+					helpers.getCandidateContents(candidates)
+				)
+				.trim()
+				// Extract content between ```mermaid and ```
+				.replace(/^[\s\S]*?```mermaid\n([\s\S]*?)\n```[\s\S]*$/, '$1')
+				.trim();
+
+			// Validate the Mermaid code
+			try {
+				await mermaid.parse(mermaidCode);
+
+				// Update the code state and attributes
+				setCode(mermaidCode);
+				setAttributes({ content: mermaidCode, diagramCode: mermaidCode });
+
+				// Show success message
+				setShowSuccessNotice(true);
+
+				// Clear the prompt
+				setAiPrompt('');
+			} catch (parseError) {
+				throw new Error(__('The AI generated invalid Mermaid syntax. Please try again.', 'mermaid-chart-block'));
+			}
+		} catch (err) {
+			console.error('AI generation error:', err);
+			setAiError(err.message || __('Failed to generate diagram', 'mermaid-chart-block'));
+		} finally {
+			setIsAiLoading(false);
+		}
+	};
 
 	// Update aiMode when code changes
 	useEffect(() => {
@@ -63,17 +196,17 @@ const Edit = ({ attributes, setAttributes }) => {
 	const displayMessage = (message, type = 'info') => {
 		if (previewRef.current) {
 			previewRef.current.innerHTML = `
-				<div class="preview-message ${type}" style="
-					padding: 16px;
-					color: ${type === 'error' ? '#cc1818' : '#1e1e1e'};
-					background: ${type === 'error' ? '#f8dcdc' : '#f0f0f0'};
-					border-radius: 2px;
-					margin: 8px 0;
-					font-size: 13px;
-				">
+				< div class="preview-message ${type}" style = "
+			padding: 16px;
+			color: ${type === 'error' ? '#cc1818' : '#1e1e1e'};
+			background: ${type === 'error' ? '#f8dcdc' : '#f0f0f0'};
+			border - radius: 2px;
+			margin: 8px 0;
+			font - size: 13px;
+			">
 					${message}
-				</div>
-			`;
+				</div >
+	`;
 		}
 	};
 
@@ -107,7 +240,7 @@ const Edit = ({ attributes, setAttributes }) => {
 			const previewEl = previewRef.current;
 			previewEl.innerHTML = '';
 
-			const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
+			const id = `mermaid - ${Math.random().toString(36).substr(2, 9)} `;
 			const container = document.createElement('div');
 			container.id = id;
 			container.className = 'mermaid';
@@ -149,13 +282,13 @@ const Edit = ({ attributes, setAttributes }) => {
 					if (err.hash) {
 						const details = [];
 						if (err.hash.expected) {
-							details.push(`Expected: ${err.hash.expected.join(', ')}`);
+							details.push(`Expected: ${err.hash.expected.join(', ')} `);
 						}
 						if (err.hash.token) {
-							details.push(`Found: ${err.hash.token}`);
+							details.push(`Found: ${err.hash.token} `);
 						}
 						if (err.hash.line) {
-							details.push(`Line: ${err.hash.line}`);
+							details.push(`Line: ${err.hash.line} `);
 						}
 						if (details.length > 0) {
 							displayMessage(details.join('\n'), 'error');
@@ -167,7 +300,7 @@ const Edit = ({ attributes, setAttributes }) => {
 			setError(err.message);
 			setIsRendering(false);
 			displayMessage(
-				`Failed to initialize diagram renderer: ${err.message}`,
+				`Failed to initialize diagram renderer: ${err.message} `,
 				'error'
 			);
 		}
@@ -259,20 +392,40 @@ const Edit = ({ attributes, setAttributes }) => {
 						<Button
 							variant="primary"
 							style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-							onClick={() => {
-								// TODO: Implement AI generation/editing logic
-								console.log('AI Prompt:', aiPrompt, 'Mode:', aiMode);
-							}}
+							onClick={handleAiRequest}
+							disabled={isAiLoading || !aiPrompt.trim()}
+							isBusy={isAiLoading}
 						>
 							<AIIcon height="16" />
-							{aiMode === 'generate' ?
-								code ? __('Generate (Overwrites)', 'mermaid-chart-block') : __('Generate', 'mermaid-chart-block') :
-								__('Edit', 'mermaid-chart-block')
+							{isAiLoading ? __('Generating...', 'mermaid-chart-block') :
+								aiMode === 'generate' ?
+									code ? __('Generate (Overwrites)', 'mermaid-chart-block') : __('Generate', 'mermaid-chart-block') :
+									__('Edit', 'mermaid-chart-block')
 							}
 						</Button>
+						{aiError && (
+							<div style={{
+								color: '#cc1818',
+								fontSize: '12px',
+								marginTop: '8px'
+							}}>
+								{aiError}
+							</div>
+						)}
 					</div>
 				</PanelBody>
 			</InspectorControls>
+
+			{showSuccessNotice && (
+				<Snackbar
+					onDismiss={() => setShowSuccessNotice(false)}
+				>
+					{aiMode === 'generate'
+						? __('Diagram generated successfully!', 'mermaid-chart-block')
+						: __('Diagram updated successfully!', 'mermaid-chart-block')
+					}
+				</Snackbar>
+			)}
 
 			<div {...blockProps}>
 				<Card>
