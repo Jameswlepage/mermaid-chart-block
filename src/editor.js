@@ -19,6 +19,7 @@ import {
 } from '@wordpress/components';
 import { useState, useEffect, useRef } from '@wordpress/element';
 import mermaid from 'mermaid';
+import AIIcon from './icons/aiIcon';
 
 // Initialize mermaid for the editor preview
 mermaid.initialize({
@@ -238,7 +239,6 @@ const Edit = ({ attributes, setAttributes }) => {
 					<div style={{
 						display: 'flex',
 						alignItems: 'center',
-						justifyContent: 'center',
 						gap: '8px',
 						marginTop: '8px'
 					}}>
@@ -258,12 +258,13 @@ const Edit = ({ attributes, setAttributes }) => {
 						</Tooltip>
 						<Button
 							variant="primary"
-							style={{ flex: '1', textAlign: 'center' }}
+							style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
 							onClick={() => {
 								// TODO: Implement AI generation/editing logic
 								console.log('AI Prompt:', aiPrompt, 'Mode:', aiMode);
 							}}
 						>
+							<AIIcon height="16" />
 							{aiMode === 'generate' ?
 								code ? __('Generate (Overwrites)', 'mermaid-chart-block') : __('Generate', 'mermaid-chart-block') :
 								__('Edit', 'mermaid-chart-block')
