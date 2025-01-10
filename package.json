@@ -16,6 +16,6 @@
         "sass": "^1.66.1"
     },
     "dependencies": {
-        "mermaid": "^10.6.1"
+        "mermaid": "*"
     }
 }

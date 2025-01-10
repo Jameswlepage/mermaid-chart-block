@@ -16,9 +16,6 @@ if (! empty($attributes['content'])) {
 	$diagram_code = $attributes['diagramCode'];
 }
 
-// Clean up the code
-$diagram_code = trim($diagram_code);
-
 // Get wrapper attributes
 $wrapper_attributes = get_block_wrapper_attributes(array(
 	'data-draggable' => ! empty($attributes['isDraggable']) ? 'true' : 'false',
@@ -47,7 +44,7 @@ $style = sprintf(
 			data-theme="<?php echo esc_attr($theme); ?>"
 			data-fontsize="<?php echo esc_attr($font_size); ?>"
 			data-direction="<?php echo esc_attr($direction); ?>">
-			<?php echo wp_kses_post($diagram_code); ?>
+			<?php echo $diagram_code; ?>
 		</div>
 	<?php endif; ?>
 </div>

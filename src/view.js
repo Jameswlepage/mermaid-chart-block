@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		startOnLoad: false,
 		theme: 'default',
 		securityLevel: 'loose',
-		htmlLabels: true // Match editor config
+		htmlLabels: true
 	});
 
 	// Find all mermaid chart containers
@@ -41,7 +41,6 @@ document.addEventListener('DOMContentLoaded', () => {
 			container.style.justifyContent = 'center';
 			container.style.width = '100%';
 			container.className = 'mermaid-target';
-			container.textContent = graphDefinition;
 
 			// Generate and insert SVG
 			const { svg } = await mermaid.render(`mermaid-${Math.random().toString(36).substr(2, 9)}`, graphDefinition);
