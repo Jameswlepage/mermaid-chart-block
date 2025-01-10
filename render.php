@@ -29,8 +29,19 @@ $wrapper_attributes = get_block_wrapper_attributes(array(
 $theme = ! empty($attributes['theme']) ? $attributes['theme'] : 'default';
 $font_size = ! empty($attributes['fontSize']) ? $attributes['fontSize'] : 16;
 $direction = ! empty($attributes['diagramDirection']) ? $attributes['diagramDirection'] : 'TB';
+$background_color = ! empty($attributes['backgroundColor']) ? $attributes['backgroundColor'] : '#ffffff';
+$padding = ! empty($attributes['padding']) ? $attributes['padding'] : 16;
+$border_style = ! empty($attributes['borderStyle']) ? $attributes['borderStyle'] : 'dashed';
+
+// Create inline styles for the wrapper
+$style = sprintf(
+	'background-color: %s; padding: %dpx; border: 1px %s #ccc;',
+	esc_attr($background_color),
+	esc_attr($padding),
+	esc_attr($border_style)
+);
 ?>
-<div <?php echo wp_kses_post($wrapper_attributes); ?>>
+<div <?php echo wp_kses_post($wrapper_attributes); ?> style="<?php echo esc_attr($style); ?>">
 	<?php if (! empty($diagram_code)) : ?>
 		<div class="mermaid"
 			data-theme="<?php echo esc_attr($theme); ?>"
