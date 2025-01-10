@@ -359,61 +359,63 @@ classDiagram
 						onChange={(value) => setAttributes({ isDraggable: value })}
 					/>
 				</PanelBody>
-				<PanelBody title={__('AI Creator', 'mermaid-chart-block')} initialOpen={false}>
-					<TextareaControl
-						label={aiMode === 'generate' ?
-							__('Describe your diagram', 'mermaid-chart-block') :
-							__('How would you like to modify the diagram?', 'mermaid-chart-block')
-						}
-						value={aiPrompt}
-						onChange={(value) => setAiPrompt(value)}
-						rows={4}
-					/>
-					<div style={{
-						display: 'flex',
-						alignItems: 'center',
-						gap: '8px',
-						marginTop: '8px'
-					}}>
-						<Tooltip text={
-							!code ?
-								__('Edit mode is disabled when no diagram exists', 'mermaid-chart-block') :
-								__('Switch between generating new diagrams or editing existing ones', 'mermaid-chart-block')
-						}>
-							<div style={{ flex: '1' }}>
-								<CheckboxControl
-									label={__('Edit', 'mermaid-chart-block')}
-									checked={aiMode === 'edit'}
-									onChange={(value) => setAiMode(value ? 'edit' : 'generate')}
-									disabled={!code}
-								/>
-							</div>
-						</Tooltip>
-						<Button
-							variant="primary"
-							style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-							onClick={handleAiRequest}
-							disabled={isAiLoading || !aiPrompt.trim()}
-							isBusy={isAiLoading}
-						>
-							<AIIcon height="16" />
-							{isAiLoading ? __('Generating...', 'mermaid-chart-block') :
-								aiMode === 'generate' ?
-									code ? __('Generate (Overwrites)', 'mermaid-chart-block') : __('Generate', 'mermaid-chart-block') :
-									__('Edit', 'mermaid-chart-block')
+				{hasAvailableServices && getAvailableService && (
+					<PanelBody title={__('AI Creator', 'mermaid-chart-block')} initialOpen={false}>
+						<TextareaControl
+							label={aiMode === 'generate' ?
+								__('Describe your diagram', 'mermaid-chart-block') :
+								__('How would you like to modify the diagram?', 'mermaid-chart-block')
 							}
-						</Button>
-						{aiError && (
-							<div style={{
-								color: '#cc1818',
-								fontSize: '12px',
-								marginTop: '8px'
-							}}>
-								{aiError}
-							</div>
-						)}
-					</div>
-				</PanelBody>
+							value={aiPrompt}
+							onChange={(value) => setAiPrompt(value)}
+							rows={4}
+						/>
+						<div style={{
+							display: 'flex',
+							alignItems: 'center',
+							gap: '8px',
+							marginTop: '8px'
+						}}>
+							<Tooltip text={
+								!code ?
+									__('Edit mode is disabled when no diagram exists', 'mermaid-chart-block') :
+									__('Switch between generating new diagrams or editing existing ones', 'mermaid-chart-block')
+							}>
+								<div style={{ flex: '1' }}>
+									<CheckboxControl
+										label={__('Edit', 'mermaid-chart-block')}
+										checked={aiMode === 'edit'}
+										onChange={(value) => setAiMode(value ? 'edit' : 'generate')}
+										disabled={!code}
+									/>
+								</div>
+							</Tooltip>
+							<Button
+								variant="primary"
+								style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+								onClick={handleAiRequest}
+								disabled={isAiLoading || !aiPrompt.trim()}
+								isBusy={isAiLoading}
+							>
+								<AIIcon height="16" />
+								{isAiLoading ? __('Generating...', 'mermaid-chart-block') :
+									aiMode === 'generate' ?
+										code ? __('Generate (Overwrites)', 'mermaid-chart-block') : __('Generate', 'mermaid-chart-block') :
+										__('Edit', 'mermaid-chart-block')
+								}
+							</Button>
+							{aiError && (
+								<div style={{
+									color: '#cc1818',
+									fontSize: '12px',
+									marginTop: '8px'
+								}}>
+									{aiError}
+								</div>
+							)}
+						</div>
+					</PanelBody>
+				)}
 			</InspectorControls>
 
 			{showSuccessNotice && (
