@@ -1,144 +1,85 @@
 .wp-block-mermaid-chart-block {
-	// Editor styles
-	&.is-selected, &.is-hovered {
+	// Editor hover/selection styling
+	&.is-selected,
+	&.is-hovered {
 		margin-bottom: 1em;
-		background-color: #f0f0f0;
+	}
+
+	.mermaid-block-header {
+		display: none; // No longer used; we replaced it with CardHeader
+	}
+
+	.mermaid-code-editor {
+		padding: 1rem 0;
+
+		textarea {
+			width: 100%;
+			font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+			font-size: 14px;
+			line-height: 1.4;
+			padding: 12px;
+			background: #fff;
+			border: 1px solid #ddd;
+			border-radius: 4px;
+			resize: vertical;
+		}
+	}
+
+	.mermaid-preview {
+		padding: 1rem 0;
 		border: 1px solid #ddd;
 		border-radius: 4px;
+		min-height: 150px;
 
-		.mermaid-block-header {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			padding: 1rem;
-			border-bottom: 1px solid #ddd;
-			background: #fff;
-			border-top-left-radius: 4px;
-			border-top-right-radius: 4px;
-
-			h2 {
-				margin: 0;
-				font-size: 1.1em;
-				font-weight: 500;
-			}
-		}
-
-		.mermaid-view-toggle {
-			.components-button {
-				height: 36px;
-				
-				&.is-primary {
-					background-color: #007cba;
-					color: #fff;
-				}
-			}
-		}
-
-		.mermaid-code-editor {
-			padding: 1rem;
-
-			textarea {
-				width: 100%;
-				font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
-				font-size: 14px;
-				line-height: 1.4;
-				padding: 12px;
-				background: #fff;
-				border: 1px solid #ddd;
-				border-radius: 4px;
-				resize: vertical;
-			}
-		}
-
-		.mermaid-preview {
-			padding: 1rem;
-			background: #fff;
-			margin: 1rem;
-			border-radius: 4px;
-			border: 1px solid #ddd;
-
-			.error-message {
-				color: #cc1818;
-				padding: 0.5rem;
-				background: #f8d7da;
-				border: 1px solid #f5c6cb;
-				border-radius: 4px;
-			}
-
-			&[data-draggable="true"] {
-				.node, .cluster {
-					cursor: move;
-					
-					&:hover {
-						filter: brightness(0.95);
-					}
-				}
-			}
-		}
-
-		pre {
-			background-color: #f3f3f3;
-			padding: 1rem;
-			overflow: auto;
-			margin: 0;
-		}
-
-		// Frontend-only styles
-		&:not(.is-selected):not(.is-hovered) {
-			border: none;
-			background: none;
-			padding: 0;
-			margin: 0;
-			
-			.mermaid {
-				display: flex;
-				justify-content: center;
-				align-items: center;
-				
-				svg {
-					max-width: 100%;
-					height: auto;
-				}
-			}
-
-			.mermaid-error {
-				display: none;
-			}
-		}
-
-		// Error message styling
-		.mermaid-error {
+		.error-message {
 			color: #cc1818;
 			padding: 0.5rem;
 			background: #f8d7da;
 			border: 1px solid #f5c6cb;
 			border-radius: 4px;
-			margin: 1rem 0;
+		}
+
+		&[data-draggable='true'] {
+			.node,
+			.cluster {
+				cursor: move;
+
+				&:hover {
+					filter: brightness(0.95);
+				}
+			}
 		}
 	}
 
-	// Frontend styles
+	// The Card itself is handled mostly by WP's default styles, but you can override here if needed
+	.components-card {
+		margin-top: 0.5rem;
+
+		.components-card__header {
+			background: #fefefe;
+			border-bottom: 1px solid #ddd;
+		}
+	}
+
+	// The front-end .mermaid-target is outside these .is-selected blocks, but included here for reference
 	.mermaid-target {
 		display: flex;
 		justify-content: center;
 		align-items: center;
 		padding: 1rem 0;
-		min-height: 100px;
-		
+		min-height: 50px;
+
 		svg {
 			max-width: 100%;
 			height: auto;
-			display: block;
-			margin: 0 auto;
 		}
 	}
 
-	// Hide source div
+	// Hide source div (the .mermaid inside dynamic rendering)
 	.mermaid {
 		display: none;
 	}
 
-	// Error message styling
 	.mermaid-error {
 		color: #721c24;
 		background-color: #f8d7da;
@@ -149,9 +90,5 @@
 		font-family: monospace;
 		white-space: pre-wrap;
 		word-break: break-word;
-	}
-
-	.mermaid-target {
-		min-height: 50px;
 	}
 }

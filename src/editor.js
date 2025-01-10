@@ -1,71 +1,158 @@
-import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
+import {
+	useBlockProps,
+	InspectorControls
+} from '@wordpress/block-editor';
 import { __ } from '@wordpress/i18n';
-import { 
-	TextareaControl, 
-	PanelBody, 
+import {
+	Card,
+	CardHeader,
+	CardBody,
+	PanelBody,
 	SelectControl,
 	RangeControl,
-	Button,
-	ButtonGroup,
 	ToggleControl,
+	TextareaControl,
+	TabPanel
 } from '@wordpress/components';
-import { useState, useEffect } from '@wordpress/element';
+import { useState, useEffect, useRef } from '@wordpress/element';
 import mermaid from 'mermaid';
 
-// Initialize mermaid
+// Initialize mermaid for the editor preview
 mermaid.initialize({
 	startOnLoad: false,
 	theme: 'default',
-	securityLevel: 'loose'
+	securityLevel: 'loose',
+	htmlLabels: true
 });
 
 const Edit = ({ attributes, setAttributes }) => {
 	const blockProps = useBlockProps();
-	const { 
+
+	const {
 		content,
 		theme,
 		fontSize,
-		padding,
-		borderStyle,
 		diagramDirection,
-		isDraggable,
+		isDraggable
 	} = attributes;
-	
+
 	const [code, setCode] = useState(content || '');
-	const [previewElement, setPreviewElement] = useState(null);
-	const [isPreview, setIsPreview] = useState(false); // Start in markup view
+	const [error, setError] = useState(null);
+	const [isRendering, setIsRendering] = useState(false);
 
-	useEffect(() => {
-		if (previewElement && code && isPreview) {
-			try {
-				previewElement.innerHTML = '';
-				const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
-				const container = document.createElement('div');
-				container.id = id;
-				container.className = 'mermaid';
-				container.textContent = code;
-				previewElement.appendChild(container);
-				
-				mermaid.initialize({
-					startOnLoad: false,
-					theme: theme,
-					fontSize: fontSize,
-					flowchart: {
-						direction: diagramDirection
-					},
-					securityLevel: 'loose',
-					htmlLabels: true,
-				});
+	// For controlling the preview
+	const previewRef = useRef(null);
+	const [activeTab, setActiveTab] = useState('markup');
 
-				mermaid.render(id, code).then(({ svg }) => {
-					container.innerHTML = svg;
-				});
-			} catch (err) {
-				console.error('Failed to render preview:', err);
-				previewElement.innerHTML = `<div class="error-message">${err.message}</div>`;
-			}
+	// Helper function to display messages in the preview area
+	const displayMessage = (message, type = 'info') => {
+		if (previewRef.current) {
+			previewRef.current.innerHTML = `
+				<div class="preview-message ${type}" style="
+					padding: 16px;
+					color: ${type === 'error' ? '#cc1818' : '#1e1e1e'};
+					background: ${type === 'error' ? '#f8dcdc' : '#f0f0f0'};
+					border-radius: 2px;
+					margin: 8px 0;
+					font-size: 13px;
+				">
+					${message}
+				</div>
+			`;
 		}
-	}, [code, previewElement, isPreview, theme, fontSize, diagramDirection]);
+	};
+
+	// Rerender mermaid whenever code, theme, etc. changes AND user is on preview
+	useEffect(() => {
+		if (activeTab !== 'preview' || !previewRef.current) {
+			return;
+		}
+
+		if (!code || !code.trim()) {
+			displayMessage('Enter some Mermaid diagram code to see a preview.');
+			return;
+		}
+
+		setIsRendering(true);
+		setError(null);
+
+		try {
+			// Reset mermaid configuration
+			mermaid.initialize({
+				startOnLoad: false,
+				theme,
+				fontSize,
+				flowchart: {
+					direction: diagramDirection
+				},
+				securityLevel: 'loose',
+				htmlLabels: true
+			});
+
+			const previewEl = previewRef.current;
+			previewEl.innerHTML = '';
+
+			const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
+			const container = document.createElement('div');
+			container.id = id;
+			container.className = 'mermaid';
+			container.style.display = 'flex';
+			container.style.justifyContent = 'center';
+			container.style.width = '100%';
+			container.textContent = code;
+			previewEl.appendChild(container);
+
+			// First validate the syntax
+			mermaid.parse(code)
+				.then(() => {
+					// If syntax is valid, render the diagram
+					return mermaid.render(id, code);
+				})
+				.then(({ svg }) => {
+					container.innerHTML = svg;
+					// Ensure SVG is visible and properly sized
+					const svgElement = container.querySelector('svg');
+					if (svgElement) {
+						svgElement.style.maxWidth = '100%';
+						svgElement.style.height = 'auto';
+						svgElement.style.display = 'block';
+						svgElement.style.margin = '0 auto';
+					}
+					setError(null);
+					setIsRendering(false);
+				})
+				.catch((err) => {
+					console.error('Mermaid rendering error:', err);
+					setError(err.message);
+					setIsRendering(false);
+					displayMessage(
+						`Unable to render diagram: ${err.message}. Please check your syntax.`,
+						'error'
+					);
+				});
+		} catch (err) {
+			console.error('Mermaid initialization error:', err);
+			setError(err.message);
+			setIsRendering(false);
+			displayMessage(
+				`Failed to initialize diagram renderer: ${err.message}`,
+				'error'
+			);
+		}
+	}, [code, theme, fontSize, diagramDirection, activeTab]);
+
+	const tabs = [
+		{
+			name: 'markup',
+			title: __('Markup', 'mermaid-chart-block'),
+			className: 'mcb-markup-tab'
+		},
+		{
+			name: 'preview',
+			title: __('Preview', 'mermaid-chart-block'),
+			className: 'mcb-preview-tab'
+		}
+	];
 
 	return (
 		<>
@@ -78,7 +165,7 @@ const Edit = ({ attributes, setAttributes }) => {
 							{ label: 'Default', value: 'default' },
 							{ label: 'Forest', value: 'forest' },
 							{ label: 'Dark', value: 'dark' },
-							{ label: 'Neutral', value: 'neutral' },
+							{ label: 'Neutral', value: 'neutral' }
 						]}
 						onChange={(value) => setAttributes({ theme: value })}
 					/>
@@ -96,7 +183,7 @@ const Edit = ({ attributes, setAttributes }) => {
 							{ label: 'Top to Bottom', value: 'TB' },
 							{ label: 'Bottom to Top', value: 'BT' },
 							{ label: 'Left to Right', value: 'LR' },
-							{ label: 'Right to Left', value: 'RL' },
+							{ label: 'Right to Left', value: 'RL' }
 						]}
 						onChange={(value) => setAttributes({ diagramDirection: value })}
 					/>
@@ -108,44 +195,80 @@ const Edit = ({ attributes, setAttributes }) => {
 					/>
 				</PanelBody>
 			</InspectorControls>
-			<div {...blockProps}>
-				<div className="mermaid-block-header">
-					<h2>{__('Mermaid Chart', 'mermaid-chart-block')}</h2>
-					<ButtonGroup className="mermaid-view-toggle">
-						<Button 
-							variant={!isPreview ? 'primary' : 'secondary'}
-							onClick={() => setIsPreview(false)}
-						>
-							{__('Markup', 'mermaid-chart-block')}
-						</Button>
-						<Button
-							variant={isPreview ? 'primary' : 'secondary'}
-							onClick={() => setIsPreview(true)}
-						>
-							{__('Preview', 'mermaid-chart-block')}
-						</Button>
-					</ButtonGroup>
-				</div>
 
-				{!isPreview && (
-					<div className="mermaid-code-editor">
-						<TextareaControl
-							value={code}
-							onChange={(newCode) => {
-								setCode(newCode);
-								setAttributes({ content: newCode });
-							}}
-							rows={10}
-							__nextHasNoMarginBottom={true}
-						/>
-					</div>
-				)}
-				
-				<div 
-					className="mermaid-preview"
-					ref={setPreviewElement}
-					style={{ display: isPreview ? 'block' : 'none' }}
-				/>
+			<div {...blockProps}>
+				<Card>
+					<CardHeader>
+						<div style={{
+							display: 'flex',
+							justifyContent: 'space-between',
+							alignItems: 'center',
+							width: '100%'
+						}}>
+							<h2 style={{
+								margin: 0,
+								fontSize: '13px',
+								fontWeight: 'bold',
+								fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif'
+							}}>
+								{__('Mermaid Chart', 'mermaid-chart-block')}
+							</h2>
+							<TabPanel
+								className="mcb-tab-panel"
+								activeClass="is-active"
+								onSelect={(tabName) => setActiveTab(tabName)}
+								tabs={tabs}
+							>
+								{() => null}
+							</TabPanel>
+						</div>
+					</CardHeader>
+					<CardBody>
+						{activeTab === 'markup' && (
+							<div className="mermaid-code-editor">
+								<TextareaControl
+									value={code}
+									onChange={(newCode) => {
+										setCode(newCode);
+										setAttributes({ content: newCode, diagramCode: newCode });
+									}}
+									rows={10}
+									__nextHasNoMarginBottom={true}
+								/>
+							</div>
+						)}
+						{activeTab === 'preview' && (
+							<div
+								className="mermaid-preview"
+								ref={previewRef}
+								style={{
+									minHeight: '200px',
+									position: 'relative',
+									padding: '16px',
+									background: '#fff',
+									border: '1px solid #e0e0e0',
+									borderRadius: '2px'
+								}}
+							>
+								{isRendering && (
+									<div style={{
+										position: 'absolute',
+										top: 0,
+										left: 0,
+										right: 0,
+										padding: '16px',
+										background: '#f0f0f0',
+										borderRadius: '2px',
+										fontSize: '13px',
+										zIndex: 1
+									}}>
+										Rendering diagram...
+									</div>
+								)}
+							</div>
+						)}
+					</CardBody>
+				</Card>
 			</div>
 		</>
 	);
